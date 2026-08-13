@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+
+# Environment Variables
+.env
+.env.*
+
+# Build Outputs
+frontend/dist/
+frontend/build/
+
+# MLflow and Data
+backend/mlruns/
+backend/data/
+backend/artifacts/
+
+# OS/Editor Files
+.DS_Store
+.idea/
+.vscode/
+*.swp

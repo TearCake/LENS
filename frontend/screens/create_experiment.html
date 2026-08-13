@@ -1,0 +1,389 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Create Experiment - ML Operations</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-container": "#283789",
+                        "on-primary-container": "#fffeff",
+                        "accent-pink": "#FF64C8",
+                        "surface-bright": "#faf9f8",
+                        "tertiary-fixed-dim": "#ccc5c0",
+                        "secondary": "#4958aa",
+                        "tertiary-container": "#7a7571",
+                        "primary-fixed-dim": "#a8c8ff",
+                        "tertiary": "#615d59",
+                        "inverse-surface": "#2f3130",
+                        "on-error-container": "#93000a",
+                        "accent-sky": "#62AEF0",
+                        "on-error": "#ffffff",
+                        "primary-container": "#0075de",
+                        "background": "#faf9f8",
+                        "on-tertiary-container": "#ffffff",
+                        "primary-fixed": "#d5e3ff",
+                        "surface-container-high": "#e9e8e7",
+                        "on-tertiary": "#ffffff",
+                        "inverse-on-surface": "#f1f0ef",
+                        "ink-muted": "#8A8682",
+                        "accent-green": "#1AAE39",
+                        "secondary-fixed": "#dee0ff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed-variant": "#4a4642",
+                        "on-background": "#1a1c1c",
+                        "border-hairline": "#E6E6E6",
+                        "ink-primary": "#111111",
+                        "surface-dim": "#dadad9",
+                        "on-tertiary-fixed": "#1e1b18",
+                        "secondary-fixed-dim": "#bac3ff",
+                        "on-secondary-fixed-variant": "#303f91",
+                        "primary": "#005db2",
+                        "surface-container-low": "#f4f3f2",
+                        "accent-purple": "#D6B6F6",
+                        "surface": "#FFFFFF",
+                        "surface-container-highest": "#e3e2e1",
+                        "on-primary": "#ffffff",
+                        "on-primary-fixed": "#001b3c",
+                        "surface-container": "#eeeeed",
+                        "secondary-container": "#97a5fe",
+                        "on-surface": "#1a1c1c",
+                        "tertiary-fixed": "#e8e1dc",
+                        "surface-variant": "#e3e2e1",
+                        "outline-variant": "#c1c6d5",
+                        "inverse-primary": "#a8c8ff",
+                        "outline": "#717784",
+                        "error": "#ba1a1a",
+                        "error-container": "#ffdad6",
+                        "on-secondary": "#ffffff",
+                        "accent-teal": "#2A9D99",
+                        "on-surface-variant": "#414753",
+                        "on-primary-fixed-variant": "#00468a",
+                        "on-secondary-fixed": "#00105b",
+                        "surface-tint": "#005eb4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "12px",
+                        "lg": "24px",
+                        "margin-mobile": "16px",
+                        "gutter": "24px",
+                        "md": "16px",
+                        "xl": "32px",
+                        "max-width-content": "1200px",
+                        "xs": "8px",
+                        "base": "4px",
+                        "xxl": "48px"
+                    },
+                    "fontFamily": {
+                        "label-caps": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-base": ["Inter"],
+                        "page-title-mobile": ["Inter"],
+                        "page-title": ["Inter"],
+                        "section-heading": ["Inter"],
+                        "feature-title": ["Inter"],
+                        "body-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-caps": ["12px", { "lineHeight": "1.3", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "display-lg": ["64px", { "lineHeight": "1.0", "letterSpacing": "-0.03em", "fontWeight": "700" }],
+                        "body-base": ["16px", { "lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400" }],
+                        "page-title-mobile": ["28px", { "lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "page-title": ["36px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "section-heading": ["22px", { "lineHeight": "1.25", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "feature-title": ["20px", { "lineHeight": "1.4", "letterSpacing": "-0.005em", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "1.4", "letterSpacing": "0", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface-bright text-on-surface antialiased min-h-screen">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-full w-[260px] border-r border-border-hairline bg-surface flex flex-col py-lg z-20">
+<!-- Brand/Header -->
+<div class="px-lg pb-md flex items-center gap-sm">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary" data-icon="lens">lens</span>
+</div>
+<div>
+<h1 class="font-page-title text-section-heading font-black text-primary tracking-tight">LENS</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant uppercase">Learning System</p>
+</div>
+</div>
+<!-- Navigation Links -->
+<div class="flex-1 mt-lg flex flex-col gap-base">
+<!-- Overview -->
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors font-body-base text-body-base mx-sm rounded-r-lg" href="#">
+<span class="material-symbols-outlined" data-icon="grid_view">grid_view</span>
+                Overview
+            </a>
+<!-- Experiments (Active) -->
+<a class="flex items-center gap-3 px-4 py-3 bg-secondary-container text-on-secondary-container border-r-4 border-primary rounded-r-lg font-bold font-body-base text-body-base mx-sm" href="#">
+<span class="material-symbols-outlined" data-icon="flask" data-weight="fill" style="font-variation-settings: 'FILL' 1;">flip_camera_ios</span>
+                Experiments
+            </a>
+<!-- Models -->
+
+<!-- Explainability -->
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors font-body-base text-body-base mx-sm rounded-r-lg" href="#">
+<span class="material-symbols-outlined" data-icon="lightbulb">lightbulb</span>
+                Explainability
+            </a><a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors font-body-base text-body-base mx-sm rounded-r-lg" href="#">
+<span class="material-symbols-outlined" data-icon="hub">hub</span>
+                Models
+            </a>
+<!-- Datasets -->
+
+<!-- Settings -->
+
+</div>
+<!-- Footer Links -->
+<div class="flex flex-col gap-base mt-auto">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors font-body-base text-body-base mx-sm rounded-r-lg" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+                Help
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors font-body-base text-body-base mx-sm rounded-r-lg" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+                Logout
+            </a>
+</div>
+</nav>
+<!-- TopNavBar -->
+<header class="fixed top-0 right-0 left-[260px] h-16 border-b border-border-hairline bg-surface z-10">
+<div class="flex justify-between items-center px-xl w-full h-full">
+<!-- Brand / Search (Left) -->
+<div class="flex items-center gap-lg">
+<span class="font-section-heading text-section-heading font-bold text-on-surface">ML OPERATIONS</span>
+</div>
+<!-- Trailing Actions -->
+<div class="flex items-center gap-md">
+
+<div class="flex items-center gap-2 border-l border-border-hairline pl-md ml-sm">
+<button class="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden bg-surface-container-high border border-border-hairline ml-2 cursor-pointer">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A detailed studio-lit profile photo of an elegant software engineer against a minimalist warm white background. High resolution, professional composition." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfFL7O_6fGYdq7vtIrzhP1YebpEaVh5d1ZS84MULXS2yWJUcjmmxtGCY7V6KxvpbIqeF1J4iFGTK1hsJKWbcO_tAnS1gkUUTkx7ryg52Tw7Y0ih1UYZ8BpCQIUYaNXbS6n70dnX9xtT6aVb0WWbXvgI2etZ84UCAdBW_BZ8reYrckpu8oxp7OGh9jIu4pJuF8OnGVaXhGKcOCv-AFUpJBNoc_beNbvWNaen3qq3cwFrhT9ikA4GPsQvg">
+</div>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-[260px] pt-16 pb-xxl px-gutter">
+<div class="max-w-max-width-content mx-auto w-full mt-xxl flex flex-col gap-xxl">
+<!-- Page Header -->
+<header>
+<h2 class="font-page-title text-page-title text-on-surface mb-2">Create an Experiment</h2>
+<p class="font-body-base text-body-base text-on-surface-variant max-w-2xl">Upload your dataset and configure a machine learning experiment. We'll handle the heavy lifting while you fine-tune the objectives.</p>
+</header>
+<!-- Grid Layout for Config -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Left Column (Dataset & Target) -->
+<div class="lg:col-span-8 flex flex-col gap-lg">
+<!-- Dataset Upload / Status Card -->
+<section class="bg-surface border border-border-hairline rounded-[12px] p-lg flex flex-col gap-md">
+<div class="flex items-center justify-between">
+<h3 class="font-feature-title text-feature-title text-on-surface">Dataset</h3>
+<button class="text-primary font-label-caps text-label-caps hover:underline">Change File</button>
+</div>
+<!-- Uploaded State -->
+<div class="border border-border-hairline rounded-lg bg-surface-bright p-md flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg bg-surface flex items-center justify-center border border-border-hairline shrink-0">
+<span class="material-symbols-outlined text-primary" data-icon="table_view">table_view</span>
+</div>
+<div class="flex-1">
+<div class="font-body-base text-body-base font-semibold text-on-surface">loan_data.csv</div>
+<div class="font-body-sm text-body-sm text-ink-muted">12,480 rows • 18 features • 2.4 MB</div>
+</div>
+<div class="shrink-0 flex items-center gap-1 text-accent-green bg-accent-green/10 px-2 py-1 rounded-sm font-label-caps text-label-caps">
+<span class="material-symbols-outlined text-[16px]" data-icon="check_circle">check_circle</span> Ready
+                            </div>
+</div>
+<!-- Data Preview Table (Compact) -->
+<div class="mt-sm border border-border-hairline rounded-lg overflow-hidden">
+<div class="bg-surface-bright px-4 py-2 border-b border-border-hairline">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Data Preview</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface font-label-caps text-label-caps text-on-surface-variant border-b border-border-hairline">
+<th class="py-2 px-4 font-medium">Age</th>
+<th class="py-2 px-4 font-medium">Income</th>
+<th class="py-2 px-4 font-medium">Credit Score</th>
+<th class="py-2 px-4 font-medium">Debt</th>
+<th class="py-2 px-4 font-medium">Education</th>
+<th class="py-2 px-4 font-medium">Default</th>
+</tr>
+</thead>
+<tbody class="font-body-sm text-body-sm text-on-surface">
+<tr class="border-b border-border-hairline hover:bg-surface-bright transition-colors">
+<td class="py-2 px-4">34</td>
+<td class="py-2 px-4">$65,000</td>
+<td class="py-2 px-4">720</td>
+<td class="py-2 px-4">$12,000</td>
+<td class="py-2 px-4">Bachelors</td>
+<td class="py-2 px-4">0</td>
+</tr>
+<tr class="border-b border-border-hairline hover:bg-surface-bright transition-colors">
+<td class="py-2 px-4">45</td>
+<td class="py-2 px-4">$92,000</td>
+<td class="py-2 px-4">680</td>
+<td class="py-2 px-4">$34,000</td>
+<td class="py-2 px-4">Masters</td>
+<td class="py-2 px-4">1</td>
+</tr>
+<tr class="hover:bg-surface-bright transition-colors">
+<td class="py-2 px-4">28</td>
+<td class="py-2 px-4">$45,000</td>
+<td class="py-2 px-4">610</td>
+<td class="py-2 px-4">$8,000</td>
+<td class="py-2 px-4">High School</td>
+<td class="py-2 px-4">1</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<!-- Target Selection & Preprocessing -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
+<!-- Target Selection -->
+<section class="bg-surface border border-border-hairline rounded-[12px] p-lg flex flex-col gap-md">
+<div>
+<h3 class="font-feature-title text-feature-title text-on-surface">Target Selection</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Select the column you want to predict.</p>
+</div>
+<div class="mt-auto">
+<label class="block font-label-caps text-label-caps text-on-surface-variant mb-2">Target Column</label>
+<div class="relative">
+<select class="w-full appearance-none bg-surface border border-border-hairline text-on-surface rounded-lg py-2 pl-4 pr-10 font-body-base text-body-base focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer">
+<option>Default (Binary)</option>
+<option>Income (Continuous)</option>
+<option>Credit Score (Continuous)</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Preprocessing -->
+<section class="bg-surface border border-border-hairline rounded-[12px] p-lg flex flex-col gap-md">
+<div>
+<h3 class="font-feature-title text-feature-title text-on-surface">Preprocessing</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Automated data preparation steps.</p>
+</div>
+<div class="flex flex-col gap-3 mt-auto">
+<label class="flex items-start gap-3 cursor-pointer group">
+<div class="flex items-center h-5 mt-0.5">
+<input checked="" class="w-4 h-4 text-primary border-border-hairline rounded-sm focus:ring-primary focus:ring-2" type="checkbox" style="color: rgb(0, 117, 222);">
+</div>
+<div class="flex-1 font-body-sm text-body-sm text-on-surface group-hover:text-primary transition-colors">
+                                        Handle missing values
+                                    </div>
+</label>
+<label class="flex items-start gap-3 cursor-pointer group">
+<div class="flex items-center h-5 mt-0.5">
+<input checked="" class="w-4 h-4 text-primary border-border-hairline rounded-sm focus:ring-primary focus:ring-2" type="checkbox" style="color: rgb(0, 117, 222);">
+</div>
+<div class="flex-1 font-body-sm text-body-sm text-on-surface group-hover:text-primary transition-colors">
+                                        Encode categorical features
+                                    </div>
+</label>
+<label class="flex items-start gap-3 cursor-pointer group">
+<div class="flex items-center h-5 mt-0.5">
+<input checked="" class="w-4 h-4 text-primary border-border-hairline rounded-sm focus:ring-primary focus:ring-2" type="checkbox" style="color: rgb(0, 117, 222);">
+</div>
+<div class="flex-1 font-body-sm text-body-sm text-on-surface group-hover:text-primary transition-colors">
+                                        Scale numerical features
+                                    </div>
+</label>
+</div>
+</section>
+</div>
+</div>
+<!-- Right Column (Models) -->
+<div class="lg:col-span-4 flex flex-col gap-lg">
+<section class="bg-surface border border-border-hairline rounded-[12px] p-lg flex flex-col gap-md h-full">
+<header>
+<h3 class="font-feature-title text-feature-title text-on-surface">Model Architecture</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Select the algorithm for training.</p>
+</header>
+<div class="flex flex-col gap-md mt-sm flex-1">
+<!-- Model Card 1 (Active) -->
+<label class="relative block bg-surface border border-primary ring-2 ring-primary/20 rounded-lg p-md cursor-pointer hover:bg-surface-bright transition-all shadow-[0_4px_24px_rgba(0,117,222,0.05)] active:scale-[0.98]" style="border-color: rgb(0, 117, 222);">
+<input checked="" class="sr-only" name="model_selection" type="radio">
+<div class="flex justify-between items-start mb-2">
+<div class="font-body-base text-body-base font-semibold text-on-surface">Logistic Regression</div>
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="check_circle" data-weight="fill" style="color: rgb(0, 117, 222); font-variation-settings: &quot;FILL&quot; 1;">check_circle</span>
+</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">Fast, interpretable baseline model. Best for linear relationships.</div>
+<div class="mt-3 flex gap-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-accent-sky bg-accent-sky/10 font-label-caps text-[10px] uppercase">Fast</span>
+</div>
+</label>
+<!-- Model Card 2 -->
+<label class="relative block bg-surface border border-border-hairline rounded-lg p-md cursor-pointer hover:border-primary/50 hover:bg-surface-bright transition-all active:scale-[0.98]">
+<input class="sr-only" name="model_selection" type="radio">
+<div class="flex justify-between items-start mb-2">
+<div class="font-body-base text-body-base font-semibold text-on-surface">Random Forest</div>
+<span class="material-symbols-outlined text-border-hairline text-[20px]" data-icon="radio_button_unchecked">radio_button_unchecked</span>
+</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">Ensemble method balancing variance and bias. Robust to outliers.</div>
+<div class="mt-3 flex gap-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-accent-teal bg-accent-teal/10 font-label-caps text-[10px] uppercase">Balanced</span>
+</div>
+</label>
+<!-- Model Card 3 -->
+<label class="relative block bg-surface border border-border-hairline rounded-lg p-md cursor-pointer hover:border-primary/50 hover:bg-surface-bright transition-all active:scale-[0.98]">
+<input class="sr-only" name="model_selection" type="radio">
+<div class="flex justify-between items-start mb-2">
+<div class="font-body-base text-body-base font-semibold text-on-surface">XGBoost</div>
+<span class="material-symbols-outlined text-border-hairline text-[20px]" data-icon="radio_button_unchecked">radio_button_unchecked</span>
+</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">Gradient boosted trees for maximum predictive accuracy.</div>
+<div class="mt-3 flex gap-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-accent-purple bg-accent-purple/10 font-label-caps text-[10px] uppercase">High Performance</span>
+</div>
+</label>
+</div>
+</section>
+</div>
+</div>
+<!-- Footer Action -->
+<div class="flex justify-end pt-lg">
+<button class="bg-primary-container text-on-primary-container hover:bg-primary transition-all active:scale-[0.98] px-xl py-3 rounded-lg font-label-caps text-label-caps flex items-center gap-2 shadow-[0_4px_12px_rgba(0,117,222,0.2)]">
+                    Start Training
+                    <span class="material-symbols-outlined text-[18px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+</main>
+
+
+
+
+</body></html>
