@@ -3,22 +3,44 @@ node_modules/
 .venv/
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 
 # Environment Variables
 .env
 .env.*
 
 # Build Outputs
+dist/
+build/
 frontend/dist/
 frontend/build/
 
-# MLflow and Data
+# MLflow, Database & Artifacts
+mlruns/
 backend/mlruns/
+mlflow.db
+*.db
+*.sqlite
+*.sqlite3
 backend/data/
 backend/artifacts/
+artifacts/
+*.joblib
 
-# OS/Editor Files
+# Test & Scratch Files
+backend/test.csv
+backend/test_data.csv
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS and Editor Files
 .DS_Store
+Thumbs.db
 .idea/
 .vscode/
 *.swp
+*.swo

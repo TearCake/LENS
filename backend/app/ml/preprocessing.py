@@ -18,10 +18,11 @@ def analyze_dataset(df: pd.DataFrame, target_column: str = None) -> dict:
     return {
         "numerical_columns": numerical_cols,
         "categorical_columns": categorical_cols,
-        "missing_values": df.isnull().sum().to_dict(),
+        "missing_value_counts": {k: int(v) for k, v in df.isnull().sum().to_dict().items()},
         "columns": df.columns.tolist(),
         "row_count": len(df),
-        "column_count": len(df.columns)
+        "column_count": len(df.columns),
+        "sample_rows": df.head(5).replace({np.nan: None}).to_dict(orient="records")
     }
 
 def create_preprocessing_pipeline(numerical_cols: list, categorical_cols: list) -> ColumnTransformer:
@@ -33,7 +34,7 @@ def create_preprocessing_pipeline(numerical_cols: list, categorical_cols: list) 
 
     categorical_transformer = Pipeline(steps=[
         ('imputer', SimpleImputer(strategy='most_frequent')),
-        ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=False))
+        ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=False, max_categories=20))
     ])
 
     preprocessor = ColumnTransformer(

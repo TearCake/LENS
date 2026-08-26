@@ -5,8 +5,28 @@ import pandas as pd
 from app.core.config import settings
 from app.schemas.dataset import DatasetUploadResponse, DatasetResponse
 from app.ml.preprocessing import analyze_dataset
+from typing import List
 
 router = APIRouter(prefix="/api/datasets", tags=["Datasets"])
+
+@router.get("/", response_model=List[dict])
+def list_datasets():
+    datasets = []
+    if os.path.exists(settings.UPLOAD_DIR):
+        for f in os.listdir(settings.UPLOAD_DIR):
+            if f.endswith(".csv"):
+                dataset_id = f.replace(".csv", "")
+                try:
+                    # To keep it fast, we just get basic info, not full analysis
+                    size_kb = round(os.path.getsize(os.path.join(settings.UPLOAD_DIR, f)) / 1024, 2)
+                    datasets.append({
+                        "dataset_id": dataset_id,
+                        "filename": f,
+                        "size_kb": size_kb
+                    })
+                except:
+                    pass
+    return datasets
 
 @router.post("/upload", response_model=DatasetUploadResponse)
 async def upload_dataset(file: UploadFile = File(...)):

@@ -1,23 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-
-export interface Experiment {
-  id: string;
-  model: string;
-  dataset: string;
-  accuracy: number | null;
-  f1: number | null;
-  status: 'Completed' | 'Running' | 'Failed';
-  updatedAt: string;
-}
-
-const MOCK_EXPERIMENTS: Experiment[] = [
-  { id: 'EXP-204', model: 'XGBoost', dataset: 'customer_churn_q3', accuracy: 95.4, f1: 0.92, status: 'Completed', updatedAt: '2 hrs ago' },
-  { id: 'EXP-203', model: 'Random Forest', dataset: 'customer_churn_q3', accuracy: 92.1, f1: 0.89, status: 'Completed', updatedAt: '5 hrs ago' },
-  { id: 'EXP-202', model: 'Neural Net (Deep)', dataset: 'image_classify_v2', accuracy: null, f1: null, status: 'Running', updatedAt: '12 hrs ago' },
-  { id: 'EXP-201', model: 'Logistic Regression', dataset: 'sales_forecast_24', accuracy: 88.5, f1: 0.81, status: 'Failed', updatedAt: '1 day ago' },
-  { id: 'EXP-200', model: 'XGBoost', dataset: 'sales_forecast_24', accuracy: 94.2, f1: 0.90, status: 'Completed', updatedAt: '2 days ago' },
-];
+import { api, type Experiment } from '../../api/client';
 
 interface ExperimentTableProps {
   actionType: 'link' | 'select';
@@ -30,37 +13,56 @@ export function ExperimentTable({ actionType, onSelect, selectedId }: Experiment
   const [statusFilter, setStatusFilter] = useState('all');
   const [modelFilter, setModelFilter] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
+  
+  const [experiments, setExperiments] = useState<Experiment[]>([]);
+
+  useEffect(() => {
+    api.getExperiments().then(setExperiments).catch(console.error);
+  }, []);
 
   const filteredAndSortedExperiments = useMemo(() => {
-    let result = [...MOCK_EXPERIMENTS];
+    let result = [...experiments];
 
     // Search filter
     if (searchTerm) {
       const lowerTerm = searchTerm.toLowerCase();
       result = result.filter(exp => 
-        exp.id.toLowerCase().includes(lowerTerm) ||
-        exp.model.toLowerCase().includes(lowerTerm) ||
-        exp.dataset.toLowerCase().includes(lowerTerm)
+        (exp.run_id && exp.run_id.toLowerCase().includes(lowerTerm)) ||
+        (exp.model_name && exp.model_name.toLowerCase().includes(lowerTerm)) ||
+        (exp.dataset_id && exp.dataset_id.toLowerCase().includes(lowerTerm))
       );
     }
 
     // Status filter
     if (statusFilter !== 'all') {
-      result = result.filter(exp => exp.status.toLowerCase() === statusFilter);
+      result = result.filter(exp => {
+        if (!exp.status) return false;
+        const s = exp.status.toLowerCase();
+        if (statusFilter === 'finished') return s === 'finished' || s === 'completed';
+        if (statusFilter === 'running') return s === 'running' || s === 'pending';
+        if (statusFilter === 'failed') return s === 'failed';
+        return s === statusFilter;
+      });
     }
 
-    // Model filter (simple includes logic)
+    // Model filter
     if (modelFilter !== 'all') {
-      if (modelFilter === 'xgboost') result = result.filter(exp => exp.model.includes('XGBoost'));
-      else if (modelFilter === 'rf') result = result.filter(exp => exp.model.includes('Random Forest'));
-      else if (modelFilter === 'lr') result = result.filter(exp => exp.model.includes('Logistic Regression'));
+      result = result.filter(exp => {
+        if (!exp.model_name) return false;
+        const m = exp.model_name.toLowerCase();
+        if (modelFilter === 'xgboost') return m.includes('xgboost');
+        if (modelFilter === 'rf') return m.includes('rf') || m.includes('random') || m.includes('forest');
+        if (modelFilter === 'lr') return m.includes('lr') || m.includes('logistic') || m.includes('regression');
+        return true;
+      });
     }
 
     // Sort
     result.sort((a, b) => {
       if (sortBy === 'newest') {
-        // Mock sorting by ID descending since they are sequential
-        return b.id.localeCompare(a.id);
+        const timeA = new Date(a.start_time).getTime() || 0;
+        const timeB = new Date(b.start_time).getTime() || 0;
+        return timeB - timeA;
       } else if (sortBy === 'accuracy_desc') {
         return (b.accuracy || 0) - (a.accuracy || 0);
       } else if (sortBy === 'accuracy_asc') {
@@ -70,26 +72,28 @@ export function ExperimentTable({ actionType, onSelect, selectedId }: Experiment
     });
 
     return result;
-  }, [searchTerm, statusFilter, modelFilter, sortBy]);
+  }, [experiments, searchTerm, statusFilter, modelFilter, sortBy]);
 
   const renderStatus = (status: Experiment['status']) => {
-    switch (status) {
-      case 'Completed':
+    const s = status ? status.toUpperCase() : '';
+    switch (s) {
+      case 'FINISHED':
+      case 'COMPLETED':
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-accent-green bg-opacity-10 text-accent-green text-[12px] font-medium border border-accent-green border-opacity-20">
             <span className="w-1.5 h-1.5 rounded-full bg-accent-green"></span> Completed
           </span>
         );
-      case 'Running':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-primary bg-opacity-10 text-primary text-[12px] font-medium border border-primary border-opacity-20">
-            <span className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin"></span> Running
-          </span>
-        );
-      case 'Failed':
+      case 'FAILED':
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-error bg-opacity-10 text-error text-[12px] font-medium border border-error border-opacity-20">
             <span className="w-1.5 h-1.5 rounded-full bg-error"></span> Failed
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-primary bg-opacity-10 text-primary text-[12px] font-medium border border-primary border-opacity-20">
+            <span className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin"></span> Running
           </span>
         );
     }
@@ -124,7 +128,7 @@ export function ExperimentTable({ actionType, onSelect, selectedId }: Experiment
             onChange={(e) => setStatusFilter(e.target.value)}
           >
             <option value="all">All Statuses</option>
-            <option value="completed">Completed</option>
+            <option value="finished">Completed</option>
             <option value="running">Running</option>
             <option value="failed">Failed</option>
           </select>
@@ -175,30 +179,30 @@ export function ExperimentTable({ actionType, onSelect, selectedId }: Experiment
             <tbody className="font-body-sm text-body-sm text-on-surface divide-y divide-border-hairline">
               {filteredAndSortedExperiments.length > 0 ? (
                 filteredAndSortedExperiments.map((exp) => {
-                  const isSelected = selectedId === exp.id;
+                  const isSelected = selectedId === exp.run_id;
                   return (
                     <tr 
-                      key={exp.id} 
-                      onClick={() => handleRowClick(exp.id)}
+                      key={exp.run_id} 
+                      onClick={() => handleRowClick(exp.run_id)}
                       className={`transition-colors group ${actionType === 'select' ? 'cursor-pointer' : ''} ${isSelected ? 'bg-primary-container bg-opacity-20' : 'hover:bg-surface-container-low'}`}
                     >
-                      <td className="py-4 px-6 font-medium text-on-surface">
+                      <td className="py-4 px-6 font-medium text-on-surface font-mono text-xs">
                         {actionType === 'link' ? (
-                          <Link to="/experiment-results" className="group-hover:text-primary transition-colors">
-                            {exp.id}
+                          <Link to={`/experiment-results?run_id=${exp.run_id}`} className="group-hover:text-primary transition-colors">
+                            {exp.run_id.substring(0, 8)}...
                           </Link>
                         ) : (
-                          <span className={isSelected ? 'text-primary' : 'group-hover:text-primary transition-colors'}>{exp.id}</span>
+                          <span className={isSelected ? 'text-primary' : 'group-hover:text-primary transition-colors'}>{exp.run_id.substring(0, 8)}...</span>
                         )}
                       </td>
-                      <td className="py-4 px-6">{exp.model}</td>
-                      <td className="py-4 px-6 text-ink-muted">{exp.dataset}</td>
-                      <td className="py-4 px-6">{exp.accuracy !== null ? `${exp.accuracy}%` : '--'}</td>
-                      <td className="py-4 px-6">{exp.f1 !== null ? exp.f1 : '--'}</td>
+                      <td className="py-4 px-6">{exp.model_name}</td>
+                      <td className="py-4 px-6 text-ink-muted">{exp.dataset_id}</td>
+                      <td className="py-4 px-6">{exp.accuracy !== null ? `${(exp.accuracy * 100).toFixed(1)}%` : '--'}</td>
+                      <td className="py-4 px-6">{exp.f1_score !== null ? exp.f1_score.toFixed(3) : '--'}</td>
                       <td className="py-4 px-6">
                         {renderStatus(exp.status)}
                       </td>
-                      <td className="py-4 px-6 text-right text-ink-muted">{exp.updatedAt}</td>
+                      <td className="py-4 px-6 text-right text-ink-muted">{new Date(exp.start_time).toLocaleString()}</td>
                     </tr>
                   );
                 })
@@ -213,7 +217,7 @@ export function ExperimentTable({ actionType, onSelect, selectedId }: Experiment
           </table>
         </div>
         <div className="p-4 border-t border-border-hairline flex justify-between items-center text-ink-muted font-body-sm text-body-sm">
-          <span>Showing {filteredAndSortedExperiments.length > 0 ? 1 : 0} to {filteredAndSortedExperiments.length} of {MOCK_EXPERIMENTS.length} entries</span>
+          <span>Showing {filteredAndSortedExperiments.length > 0 ? 1 : 0} to {filteredAndSortedExperiments.length} of {experiments.length} entries</span>
           <div className="flex gap-2">
             <button className="px-3 py-1 rounded border border-border-hairline hover:bg-surface-container-low transition-colors disabled:opacity-50" disabled>Previous</button>
             <button className="px-3 py-1 rounded border border-border-hairline hover:bg-surface-container-low transition-colors disabled:opacity-50" disabled>Next</button>
