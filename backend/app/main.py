@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.paths import ensure_directories
-from app.api import datasets, training, experiments, models, explainability
+from app.api import datasets, training, experiments, models, explainability, dashboard
 
 # Ensure directories exist on startup
 ensure_directories()
@@ -24,6 +24,7 @@ app.include_router(training.router)
 app.include_router(experiments.router)
 app.include_router(models.router)
 app.include_router(explainability.router)
+app.include_router(dashboard.router)
 
 @app.get("/health")
 def health_check():

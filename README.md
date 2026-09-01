@@ -3,6 +3,7 @@
 LENS is a powerful Explainable AI (XAI) and MLOps platform designed to simplify the process of training machine learning models and understanding their predictions.
 
 The platform provides an end-to-end workflow:
+
 1. **Upload Datasets**: Automatically validate and preprocess tabular data.
 2. **Train Models**: Train multiple architectures (XGBoost, Random Forest, Logistic Regression) simultaneously.
 3. **Track Experiments**: Automatically log hyperparameters, metrics, and models using MLflow.
@@ -16,13 +17,16 @@ This repository is organized into two main components:
 - **[`/backend`](./backend/)**: A robust Python FastAPI backend integrated with Scikit-learn, XGBoost, SHAP, and MLflow.
 
 Please refer to the individual `README.md` files in each directory for specific setup and installation instructions:
+
 - [Frontend Setup Guide](./frontend/README.md)
 - [Backend Setup Guide](./backend/README.md)
 
 ## Quick Start
+
 To run the full stack locally:
 
 1. **Start the Backend APIs**:
+
    ```bash
    cd backend
    python -m venv .venv
@@ -32,6 +36,7 @@ To run the full stack locally:
    ```
 
 2. **Start the MLflow Tracking Server**:
+
    ```bash
    # In a new terminal
    cd backend

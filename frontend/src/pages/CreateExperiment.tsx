@@ -1,14 +1,65 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { api, type Dataset, type DatasetDetails } from '../api/client';
 
 export function CreateExperiment() {
+  const [searchParams] = useSearchParams();
+  const initialDatasetId = searchParams.get('dataset_id') || '';
   const [selectedModels, setSelectedModels] = useState<string[]>(['logistic_regression']);
+  const [datasets, setDatasets] = useState<Dataset[]>([]);
+  const [selectedDatasetId, setSelectedDatasetId] = useState<string>(initialDatasetId);
+  const [datasetDetails, setDatasetDetails] = useState<DatasetDetails | null>(null);
+  const [targetColumn, setTargetColumn] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+  
   const navigate = useNavigate();
+
+  useEffect(() => {
+    async function loadDatasets() {
+      try {
+        const data = await api.getDatasets();
+        setDatasets(data);
+        if (data.length > 0 && !selectedDatasetId) {
+          setSelectedDatasetId(data[0].dataset_id);
+        }
+      } catch (err) {
+        console.error("Failed to load datasets:", err);
+      }
+    }
+    loadDatasets();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedDatasetId) return;
+    setDatasetDetails(null);
+    api.getDatasetDetails(selectedDatasetId)
+      .then(details => {
+        setDatasetDetails(details);
+        if (details.columns.length > 0 && (!targetColumn || !details.columns.includes(targetColumn))) {
+           // Default to the last column (often the target in simple CSVs)
+           setTargetColumn(details.columns[details.columns.length - 1]);
+        }
+      })
+      .catch(console.error);
+  }, [selectedDatasetId]);
 
   const toggleModel = (model: string) => {
     setSelectedModels(prev => 
       prev.includes(model) ? prev.filter(m => m !== model) : [...prev, model]
     );
+  };
+
+  const handleStartTraining = async () => {
+    if (!selectedDatasetId || !targetColumn || selectedModels.length === 0) return;
+    try {
+      setLoading(true);
+      const res = await api.startTraining(selectedDatasetId, targetColumn, selectedModels);
+      navigate(`/training-progress?run_id=${res.run_id}`);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to start training. See console for details.");
+      setLoading(false);
+    }
   };
 
   return (
@@ -32,62 +83,55 @@ export function CreateExperiment() {
               <button className="text-primary font-label-caps text-label-caps hover:underline">Change File</button>
             </div>
             
-            {/* Uploaded State */}
-            <div className="border border-border-hairline rounded-lg bg-surface-bright p-md flex items-center gap-md">
-              <div className="w-12 h-12 rounded-lg bg-surface flex items-center justify-center border border-border-hairline shrink-0">
-                <span className="material-symbols-outlined text-primary">table_view</span>
-              </div>
-              <div className="flex-1">
-                <div className="font-body-base text-body-base font-semibold text-on-surface">loan_data.csv</div>
-                <div className="font-body-sm text-body-sm text-ink-muted">12,480 rows • 18 features • 2.4 MB</div>
-              </div>
-              <div className="shrink-0 flex items-center gap-1 text-accent-green bg-accent-green/10 px-2 py-1 rounded-sm font-label-caps text-label-caps">
-                <span className="material-symbols-outlined text-[16px]">check_circle</span> Ready
-              </div>
+            {/* Dataset Selection */}
+            <div className="border border-border-hairline rounded-lg bg-surface-bright p-md flex flex-col gap-sm">
+              <label className="font-label-caps text-label-caps text-on-surface-variant">Select Dataset</label>
+              <select 
+                className="w-full bg-surface border border-border-hairline rounded-lg p-2 font-body-sm focus:outline-none focus:border-primary"
+                value={selectedDatasetId}
+                onChange={(e) => setSelectedDatasetId(e.target.value)}
+              >
+                {datasets.length === 0 ? (
+                  <option value="" disabled>No datasets found. Please upload one via backend.</option>
+                ) : (
+                  datasets.map(d => (
+                    <option key={d.dataset_id} value={d.dataset_id}>
+                      {d.filename} ({d.size_kb} KB)
+                    </option>
+                  ))
+                )}
+              </select>
             </div>
 
             {/* Data Preview Table (Compact) */}
             <div className="mt-sm border border-border-hairline rounded-lg overflow-hidden">
-              <div className="bg-surface-bright px-4 py-2 border-b border-border-hairline">
+              <div className="bg-surface-bright px-4 py-2 border-b border-border-hairline flex justify-between items-center">
                 <span className="font-label-caps text-label-caps text-on-surface-variant">Data Preview</span>
+                {datasetDetails && (
+                  <span className="font-label-caps text-[10px] text-ink-muted">{datasetDetails.row_count} rows, {datasetDetails.column_count} cols</span>
+                )}
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-surface font-label-caps text-label-caps text-on-surface-variant border-b border-border-hairline">
-                      <th className="py-2 px-4 font-medium">Age</th>
-                      <th className="py-2 px-4 font-medium">Income</th>
-                      <th className="py-2 px-4 font-medium">Credit Score</th>
-                      <th className="py-2 px-4 font-medium">Debt</th>
-                      <th className="py-2 px-4 font-medium">Education</th>
-                      <th className="py-2 px-4 font-medium">Default</th>
+                      {datasetDetails?.columns.map(col => (
+                        <th key={col} className="py-2 px-4 font-medium whitespace-nowrap">{col}</th>
+                      )) || <th className="py-2 px-4 font-medium">Loading...</th>}
                     </tr>
                   </thead>
                   <tbody className="font-body-sm text-body-sm text-on-surface">
-                    <tr className="border-b border-border-hairline hover:bg-surface-bright transition-colors">
-                      <td className="py-2 px-4">34</td>
-                      <td className="py-2 px-4">$65,000</td>
-                      <td className="py-2 px-4">720</td>
-                      <td className="py-2 px-4">$12,000</td>
-                      <td className="py-2 px-4">Bachelors</td>
-                      <td className="py-2 px-4">0</td>
-                    </tr>
-                    <tr className="border-b border-border-hairline hover:bg-surface-bright transition-colors">
-                      <td className="py-2 px-4">45</td>
-                      <td className="py-2 px-4">$92,000</td>
-                      <td className="py-2 px-4">680</td>
-                      <td className="py-2 px-4">$34,000</td>
-                      <td className="py-2 px-4">Masters</td>
-                      <td className="py-2 px-4">1</td>
-                    </tr>
-                    <tr className="hover:bg-surface-bright transition-colors">
-                      <td className="py-2 px-4">28</td>
-                      <td className="py-2 px-4">$45,000</td>
-                      <td className="py-2 px-4">610</td>
-                      <td className="py-2 px-4">$8,000</td>
-                      <td className="py-2 px-4">High School</td>
-                      <td className="py-2 px-4">1</td>
-                    </tr>
+                    {datasetDetails?.sample_rows.map((row, i) => (
+                      <tr key={i} className="border-b border-border-hairline hover:bg-surface-bright transition-colors">
+                        {datasetDetails.columns.map(col => (
+                          <td key={col} className="py-2 px-4 whitespace-nowrap truncate max-w-[150px]">{String(row[col])}</td>
+                        ))}
+                      </tr>
+                    )) || (
+                      <tr>
+                        <td colSpan={100} className="py-4 text-center text-ink-muted">No data available</td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -105,14 +149,18 @@ export function CreateExperiment() {
               <div className="mt-auto">
                 <label className="block font-label-caps text-label-caps text-on-surface-variant mb-2">Target Column</label>
                 <div className="relative">
-                  <select className="w-full appearance-none bg-surface border border-border-hairline text-on-surface rounded-lg py-2 pl-4 pr-10 font-body-base text-body-base focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer">
-                    <option>Default (Binary)</option>
-                    <option>Income (Continuous)</option>
-                    <option>Credit Score (Continuous)</option>
+                  <select 
+                    className="w-full bg-surface border border-border-hairline text-on-surface rounded-lg py-2 pl-4 pr-10 font-body-base text-body-base focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
+                    value={targetColumn}
+                    onChange={(e) => setTargetColumn(e.target.value)}
+                    disabled={!datasetDetails}
+                  >
+                    <option value="" disabled>Select target column...</option>
+                    {datasetDetails?.columns.map(col => (
+                      <option key={col} value={col}>{col}</option>
+                    ))}
                   </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-on-surface-variant">
-                    <span className="material-symbols-outlined">expand_more</span>
-                  </div>
+                  <span className="material-symbols-outlined absolute right-3 top-[10px] text-ink-muted pointer-events-none">expand_more</span>
                 </div>
               </div>
             </section>
@@ -246,11 +294,12 @@ export function CreateExperiment() {
       {/* Footer Action */}
       <div className="flex justify-end pt-lg">
         <button 
-          onClick={() => navigate('/training-progress')}
-          className="bg-primary-container text-on-primary-container hover:bg-primary transition-all active:scale-[0.98] px-xl py-3 rounded-lg font-label-caps text-label-caps flex items-center gap-2 shadow-[0_4px_12px_rgba(0,117,222,0.2)]"
+          onClick={handleStartTraining}
+          disabled={loading || !selectedDatasetId || !targetColumn || selectedModels.length === 0}
+          className="bg-primary-container text-on-primary-container hover:bg-primary transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 px-xl py-3 rounded-lg font-label-caps text-label-caps flex items-center gap-2 shadow-[0_4px_12px_rgba(0,117,222,0.2)]"
         >
-          Start Training
-          <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+          {loading ? 'Starting...' : 'Start Training'}
+          <span className="material-symbols-outlined text-[18px]">{loading ? 'sync' : 'arrow_forward'}</span>
         </button>
       </div>
     </div>

@@ -4,21 +4,21 @@ import xgboost as xgb
 import time
 
 def train_logistic_regression(X_train, y_train, **kwargs):
-    model = LogisticRegression(random_state=42, max_iter=1000, **kwargs)
+    model = LogisticRegression(random_state=42, max_iter=500, **kwargs)
     start_time = time.time()
     model.fit(X_train, y_train)
     training_time = time.time() - start_time
     return model, training_time, model.get_params()
 
 def train_random_forest(X_train, y_train, **kwargs):
-    model = RandomForestClassifier(random_state=42, **kwargs)
+    model = RandomForestClassifier(random_state=42, n_estimators=50, n_jobs=-1, **kwargs)
     start_time = time.time()
     model.fit(X_train, y_train)
     training_time = time.time() - start_time
     return model, training_time, model.get_params()
 
 def train_xgboost(X_train, y_train, **kwargs):
-    model = xgb.XGBClassifier(random_state=42, eval_metric='logloss', **kwargs)
+    model = xgb.XGBClassifier(random_state=42, eval_metric='logloss', n_jobs=-1, **kwargs)
     start_time = time.time()
     model.fit(X_train, y_train)
     training_time = time.time() - start_time
