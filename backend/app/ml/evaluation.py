@@ -11,10 +11,13 @@ def evaluate_model(y_true, y_pred, y_prob=None) -> dict:
     
     if y_prob is not None:
         try:
-            # For multi-class or binary
-            if len(set(y_true)) == 2:
-                metrics["roc_auc"] = float(roc_auc_score(y_true, y_prob[:, 1]))
-            else:
+            unique_classes = set(y_true)
+            if len(unique_classes) == 2:
+                if hasattr(y_prob, "shape") and len(y_prob.shape) == 2 and y_prob.shape[1] >= 2:
+                    metrics["roc_auc"] = float(roc_auc_score(y_true, y_prob[:, 1]))
+                else:
+                    metrics["roc_auc"] = float(roc_auc_score(y_true, y_prob))
+            elif len(unique_classes) > 2:
                 metrics["roc_auc"] = float(roc_auc_score(y_true, y_prob, multi_class='ovr'))
         except Exception:
             pass # ROC AUC might fail depending on classes present in y_true

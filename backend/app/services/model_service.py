@@ -42,11 +42,26 @@ def predict_with_model(model_id_or_run_id: str, features: dict):
     # Convert features to DataFrame
     df = pd.DataFrame([features])
     
+    # Coerce numerical columns to float if stored in metadata
+    for col in metadata.get("numerical_columns", []):
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+    
     # Transform
     X_transformed = pipeline.transform(df)
     
     # Predict
-    prediction = model.predict(X_transformed)[0]
+    raw_pred = model.predict(X_transformed)[0]
+    prediction = int(raw_pred) if isinstance(raw_pred, (int, np.integer)) else float(raw_pred) if isinstance(raw_pred, (float, np.floating)) else raw_pred
+    
+    # Map to original class label if available
+    target_classes = metadata.get("target_classes", [])
+    predicted_label = str(prediction)
+    if target_classes and isinstance(prediction, int) and 0 <= prediction < len(target_classes):
+        predicted_label = str(target_classes[prediction])
+    elif target_classes and isinstance(raw_pred, (int, np.integer)) and 0 <= int(raw_pred) < len(target_classes):
+        predicted_label = str(target_classes[int(raw_pred)])
+
     probability = 1.0
     if hasattr(model, "predict_proba"):
         probs = model.predict_proba(X_transformed)[0]
@@ -69,7 +84,8 @@ def predict_with_model(model_id_or_run_id: str, features: dict):
             print(f"Local SHAP failed: {e}")
             
     return {
-        "prediction": int(prediction) if isinstance(prediction, (int, np.integer)) else float(prediction) if isinstance(prediction, (float, np.floating)) else prediction,
+        "prediction": prediction,
+        "predicted_label": predicted_label,
         "probability": probability,
         "base_value": base_value,
         "feature_contributions": contributions,

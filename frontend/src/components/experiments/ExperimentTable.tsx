@@ -167,7 +167,7 @@ export function ExperimentTable({ actionType, onSelect, selectedId }: Experiment
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-surface-container-lowest border-b border-border-hairline">
-                <th className="py-3 px-6 font-label-caps text-label-caps text-ink-muted font-medium">Experiment</th>
+                <th className="py-3 px-6 font-label-caps text-label-caps text-ink-muted font-medium">Run ID</th>
                 <th className="py-3 px-6 font-label-caps text-label-caps text-ink-muted font-medium">Model</th>
                 <th className="py-3 px-6 font-label-caps text-label-caps text-ink-muted font-medium">Dataset</th>
                 <th className="py-3 px-6 font-label-caps text-label-caps text-ink-muted font-medium">Accuracy</th>
@@ -195,7 +195,16 @@ export function ExperimentTable({ actionType, onSelect, selectedId }: Experiment
                           <span className={isSelected ? 'text-primary' : 'group-hover:text-primary transition-colors'}>{exp.run_id.substring(0, 8)}...</span>
                         )}
                       </td>
-                      <td className="py-4 px-6">{exp.model_name}</td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-on-surface">{exp.model_name}</span>
+                          {exp.is_champion && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-accent-green/10 text-accent-green border border-accent-green/20 uppercase tracking-wider">
+                              Champion
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="py-4 px-6 text-ink-muted">{exp.dataset_id}</td>
                       <td className="py-4 px-6">{exp.accuracy !== null ? `${(exp.accuracy * 100).toFixed(1)}%` : '--'}</td>
                       <td className="py-4 px-6">{exp.f1_score !== null ? exp.f1_score.toFixed(3) : '--'}</td>

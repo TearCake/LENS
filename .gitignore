@@ -23,12 +23,17 @@ mlflow.db
 *.db
 *.sqlite
 *.sqlite3
+data/
 backend/data/
 backend/artifacts/
 artifacts/
 *.joblib
 
-# Test & Scratch Files
+# Datasets and Scratch Files
+*.csv
+!train.csv
+*.xls
+*.xlsx
 backend/test.csv
 backend/test_data.csv
 
