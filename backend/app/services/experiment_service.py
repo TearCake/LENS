@@ -7,6 +7,15 @@ def get_all_experiments():
     if runs is None or runs.empty:
         return []
     
+    # Identify champion run_id for each experiment batch
+    champions_by_exp = {}
+    if 'tags.experiment_id' in runs.columns and 'metrics.accuracy' in runs.columns:
+        valid_runs = runs.dropna(subset=['metrics.accuracy'])
+        for exp_id, group in valid_runs.groupby('tags.experiment_id'):
+            if not group.empty:
+                best = group.sort_values(by='metrics.accuracy', ascending=False).iloc[0]
+                champions_by_exp[str(exp_id)] = str(best['run_id'])
+
     experiments = []
     for _, row in runs.iterrows():
         # Handle timestamp safely
@@ -15,15 +24,21 @@ def get_all_experiments():
             start_time_str = start_time_val.isoformat()
         else:
             start_time_str = str(start_time_val) if start_time_val is not None else ""
-            
+        
+        run_id_str = str(row['run_id'])
+        exp_id_str = str(row.get('tags.experiment_id', ''))
+        is_champ = (champions_by_exp.get(exp_id_str) == run_id_str) if exp_id_str else False
+
         experiments.append({
-            "run_id": str(row['run_id']),
+            "run_id": run_id_str,
+            "experiment_id": exp_id_str,
             "model_name": str(row.get('tags.model_name', 'unknown')) if pd.notna(row.get('tags.model_name')) else 'unknown',
             "dataset_id": str(row.get('tags.dataset_id', 'unknown')) if pd.notna(row.get('tags.dataset_id')) else 'unknown',
             "accuracy": float(row['metrics.accuracy']) if ('metrics.accuracy' in row and pd.notna(row['metrics.accuracy'])) else None,
             "f1_score": float(row['metrics.f1_score']) if ('metrics.f1_score' in row and pd.notna(row['metrics.f1_score'])) else None,
             "status": str(row['status']),
-            "start_time": start_time_str
+            "start_time": start_time_str,
+            "is_champion": is_champ
         })
     return clean_for_json(experiments)
 
@@ -101,25 +116,32 @@ def get_experiment_details(run_id: str):
     champion = batch_models[0]
     champion_model_id = champion.get("model_id") or tags.get("model_id", "")
     
-    # 4. Extract top 5 SHAP features for champion
-    top_features = []
-    if champion_model_id:
-        try:
-            from app.services.model_service import get_model_metadata
-            meta = get_model_metadata(champion_model_id)
-            f_names = meta.get("feature_names", [])
-            f_importances = meta.get("feature_importance", [])
-            pairs = []
-            for i, name in enumerate(f_names):
-                if i < len(f_importances):
-                    pairs.append({"feature": name, "importance": float(f_importances[i])})
-            pairs.sort(key=lambda x: x["importance"], reverse=True)
-            top_features = pairs[:5]
-        except Exception as e:
-            print(f"Failed extracting top features: {e}")
+    # 4. Extract top 5 SHAP features for each model in batch
+    for m in batch_models:
+        m_id = m.get("model_id")
+        m_top = []
+        if m_id:
+            try:
+                from app.services.model_service import get_model_metadata
+                meta = get_model_metadata(m_id)
+                f_names = meta.get("feature_names", [])
+                f_importances = meta.get("feature_importance", [])
+                pairs = []
+                for i, name in enumerate(f_names):
+                    if i < len(f_importances):
+                        pairs.append({"feature": name, "importance": float(f_importances[i])})
+                pairs.sort(key=lambda x: x["importance"], reverse=True)
+                m_top = pairs[:5]
+            except Exception:
+                pass
+        m["top_features"] = m_top
+
+    top_features = champion.get("top_features", [])
 
     formatted = {
         "run_id": str(champion.get("run_id", info.get("run_id", run_id))),
+        "selected_run_id": run_id,
+        "champion_run_id": str(champion.get("run_id", "")),
         "experiment_id": exp_id_tag or info.get("experiment_id", ""),
         "model_name": champion.get("model_name", tags.get("model_name", "unknown")),
         "dataset_id": dataset_id_tag or "unknown",

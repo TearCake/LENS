@@ -23,7 +23,8 @@ def get_global_explanation(model_id: str):
         fi_dict = {}
         for i, name in enumerate(feature_names):
             if i < len(feature_importance_list):
-                fi_dict[name] = float(feature_importance_list[i])
+                clean_name = str(name).replace("num__", "").replace("cat__", "")
+                fi_dict[clean_name] = float(feature_importance_list[i])
             
         return GlobalExplainabilityResponse(
             model_id=actual_model_id,

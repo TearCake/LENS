@@ -5,13 +5,22 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 
-def generate_global_shap(model, X_transformed, model_type: str, output_dir: str):
+def generate_global_shap(model, X_transformed, model_type: str, output_dir: str, feature_names: list = None):
     """Generate SHAP summary plot and feature importance with subsampling for fast execution."""
     os.makedirs(output_dir, exist_ok=True)
     
     # Subsample data for fast explanation (max 100 samples)
     n_samples = min(100, X_transformed.shape[0])
     shap_sample = X_transformed[:n_samples]
+    
+    # Clean feature names (remove sklearn prefixes like num__ and cat__)
+    clean_feature_names = None
+    if feature_names:
+        clean_feature_names = [
+            str(f).replace("num__", "").replace("cat__", "") for f in feature_names
+        ]
+        if len(clean_feature_names) != shap_sample.shape[1]:
+            clean_feature_names = None
     
     # Select explainer based on model type
     if model_type in ["random_forest", "xgboost"]:
@@ -27,9 +36,12 @@ def generate_global_shap(model, X_transformed, model_type: str, output_dir: str)
         explainer = shap.LinearExplainer(model, shap_sample)
         shap_values = explainer.shap_values(shap_sample)
 
-    # Save summary plot
+    # Save summary plot with actual feature names
     plt.figure(figsize=(10, 6))
-    shap.summary_plot(shap_values, shap_sample, show=False)
+    if clean_feature_names:
+        shap.summary_plot(shap_values, shap_sample, feature_names=clean_feature_names, show=False)
+    else:
+        shap.summary_plot(shap_values, shap_sample, show=False)
     plot_path = os.path.join(output_dir, "shap_summary.png")
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close('all')
@@ -62,7 +74,7 @@ def generate_local_shap(explainer, instance_transformed, feature_names):
             val = val[1] if len(val) > 1 else val[0]
             
         contributions.append({
-            "feature": feature,
+            "feature": str(feature).replace("num__", "").replace("cat__", ""),
             "shap_value": float(val),
             "direction": "positive" if val > 0 else "negative"
         })

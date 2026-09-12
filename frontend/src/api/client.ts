@@ -32,6 +32,7 @@ export interface DatasetDetails extends Dataset {
 
 export interface Experiment {
   run_id: string;
+  experiment_id?: string;
   model_name: string;
   dataset_id: string;
   accuracy: number | null;
@@ -39,6 +40,8 @@ export interface Experiment {
   status: string;
   start_time: number;
   model_id?: string;
+  is_champion?: boolean;
+  selected_run_id?: string;
   models?: {
     run_id: string;
     model_name: string;
@@ -46,6 +49,10 @@ export interface Experiment {
     accuracy: number | null;
     f1_score: number | null;
     status: string;
+    top_features?: {
+      feature: string;
+      importance: number;
+    }[];
   }[];
   top_features?: {
     feature: string;

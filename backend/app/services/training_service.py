@@ -4,9 +4,10 @@ import joblib
 import uuid
 from datetime import datetime
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
 from app.core.config import settings
 from app.mlflow_manager import mlflow_manager
-from app.ml.preprocessing import create_preprocessing_pipeline, analyze_dataset
+from app.ml.preprocessing import create_preprocessing_pipeline, analyze_dataset, clean_dataset
 from app.ml.trainers import MODEL_REGISTRY
 from app.ml.evaluation import evaluate_model
 from app.ml.explainability import generate_global_shap
@@ -47,9 +48,14 @@ def run_training_experiment(experiment_run_id: str, dataset_id: str, target_colu
         if target_column not in df.columns:
             raise ValueError(f"Target column '{target_column}' was not found in the dataset.")
         
-        # 2. Preprocess
+        # 2. Clean numeric-like columns (e.g. TotalCharges with spaces)
+        df = clean_dataset(df, target_column)
+        
+        # 3. Analyze and separate features and target
         dataset_info = analyze_dataset(df, target_column)
-        X = df.drop(columns=[target_column])
+        id_cols = dataset_info.get("id_columns", [])
+        cols_to_drop = [c for c in ([target_column] + id_cols) if c and c in df.columns]
+        X = df.drop(columns=cols_to_drop)
         y = df[target_column]
     
         # Simple check for target type (assuming classification for MVP)
@@ -58,11 +64,23 @@ def run_training_experiment(experiment_run_id: str, dataset_id: str, target_colu
         else:
             raise ValueError("Target appears to be continuous, regression not yet supported.")
         
+        # Encode target classes to integers [0, 1, ..., k-1] for estimators (XGBoost requires integer classes)
+        label_encoder = LabelEncoder()
+        y_encoded = label_encoder.fit_transform(y.astype(str) if y.dtype == 'object' else y)
+        target_classes = [str(c) for c in label_encoder.classes_]
+
         # Split data
         TRAINING_JOBS[experiment_run_id]["progress"] = 20
         TRAINING_JOBS[experiment_run_id]["current_step"] = "Preprocessing data"
     
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        try:
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y_encoded, test_size=0.2, random_state=42, stratify=y_encoded
+            )
+        except Exception:
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y_encoded, test_size=0.2, random_state=42
+            )
     
         # Create and fit pipeline
         preprocessor = create_preprocessing_pipeline(
@@ -73,18 +91,22 @@ def run_training_experiment(experiment_run_id: str, dataset_id: str, target_colu
         X_train_transformed = preprocessor.fit_transform(X_train)
         X_test_transformed = preprocessor.transform(X_test)
     
-        # Save the pipeline
+        # Save the pipeline and label encoder
         pipeline_id = str(uuid.uuid4())
         pipeline_path = os.path.join(settings.MODEL_DIR, f"preprocessor_{pipeline_id}.joblib")
         joblib.dump(preprocessor, pipeline_path)
+        
+        label_encoder_path = os.path.join(settings.MODEL_DIR, f"label_encoder_{pipeline_id}.joblib")
+        joblib.dump(label_encoder, label_encoder_path)
     
         results = []
 
-        # Get feature names if possible
+        # Get feature names with prefixes stripped (e.g. num__tenure -> tenure)
         feature_names = []
         try:
-            feature_names = preprocessor.get_feature_names_out()
-        except:
+            raw_fnames = preprocessor.get_feature_names_out()
+            feature_names = [str(f).replace("num__", "").replace("cat__", "") for f in raw_fnames]
+        except Exception:
             feature_names = [f"feature_{i}" for i in range(X_train_transformed.shape[1])]
     
         total_models = len(models_to_train)
@@ -130,7 +152,7 @@ def run_training_experiment(experiment_run_id: str, dataset_id: str, target_colu
                 TRAINING_JOBS[experiment_run_id]["current_step"] = f"Generating SHAP for {model_name}"
                 try:
                     explainer, plot_path, feature_importance = generate_global_shap(
-                        model, X_train_transformed, model_name, shap_output_dir
+                        model, X_train_transformed, model_name, shap_output_dir, feature_names=list(feature_names)
                     )
                     
                     # Convert feature importance to list corresponding to feature_names
@@ -164,6 +186,7 @@ def run_training_experiment(experiment_run_id: str, dataset_id: str, target_colu
                 joblib.dump(model, model_path)
                 
                 mlflow_manager.log_artifact(pipeline_path, "pipeline")
+                mlflow_manager.log_artifact(label_encoder_path, "label_encoder")
                 mlflow_manager.log_artifact(model_path, "model")
                 if plot_path:
                     mlflow_manager.log_artifact(plot_path, "shap")
@@ -180,9 +203,12 @@ def run_training_experiment(experiment_run_id: str, dataset_id: str, target_colu
                     "artifact_paths": {
                         "model": model_path,
                         "pipeline": pipeline_path,
+                        "label_encoder": label_encoder_path,
                         "explainer": explainer_path,
                         "shap_plot": plot_path
                     },
+                    "target_classes": target_classes,
+                    "numerical_columns": dataset_info.get("numerical_columns", []),
                     "feature_names": list(feature_names)
                 })
                 
@@ -198,6 +224,9 @@ def run_training_experiment(experiment_run_id: str, dataset_id: str, target_colu
                     "feature_importance": feature_importance_list,
                     "created_at": datetime.now().isoformat(),
                     "pipeline_path": pipeline_path,
+                    "label_encoder_path": label_encoder_path,
+                    "target_classes": target_classes,
+                    "numerical_columns": dataset_info.get("numerical_columns", []),
                     "explainer_path": explainer_path
                 }, metadata_path)
                 

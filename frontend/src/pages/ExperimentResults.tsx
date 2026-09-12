@@ -6,19 +6,33 @@ export function ExperimentResults() {
   const [searchParams] = useSearchParams();
   const runId = searchParams.get('run_id');
   const [experiment, setExperiment] = useState<Experiment | null>(null);
+  const [selectedModelRunId, setSelectedModelRunId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!runId) return;
-    api.getExperimentDetails(runId).then(setExperiment).catch(console.error);
+    api.getExperimentDetails(runId).then((data) => {
+      setExperiment(data);
+      // Default to the requested runId if present in models, else default to the champion
+      setSelectedModelRunId(runId);
+    }).catch(console.error);
   }, [runId]);
+
+  const modelsList = experiment?.models && experiment.models.length > 0 ? experiment.models : (experiment ? [experiment] : []);
+  const championModel = modelsList[0] || null;
+  const activeModel = modelsList.find(m => m.run_id === selectedModelRunId) || championModel;
+  const activeRunId = activeModel?.run_id || experiment?.run_id || runId;
+  const activeTopFeatures = (activeModel?.top_features && activeModel.top_features.length > 0) 
+    ? activeModel.top_features 
+    : (experiment?.top_features || []);
+
   return (
     <div className="max-w-[1200px] mx-auto">
       {/* Header Section */}
       <div className="mb-xxl">
         <div className="flex items-center gap-2 font-body-sm text-body-sm text-ink-muted mb-sm">
-          <a className="hover:text-primary transition-colors" href="#">Experiments</a>
+          <Link className="hover:text-primary transition-colors" to="/history">Experiments</Link>
           <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-          <span className="text-on-surface font-mono">{runId?.substring(0, 8)}...</span>
+          <span className="text-on-surface font-mono">{activeRunId?.substring(0, 8)}...</span>
         </div>
         <div className="flex justify-between items-end">
           <div>
@@ -28,6 +42,11 @@ export function ExperimentResults() {
               <span className={`px-3 py-1 rounded-sm font-label-caps text-label-caps flex items-center gap-1 ${(experiment?.status?.toUpperCase() === 'FINISHED' || experiment?.status?.toUpperCase() === 'COMPLETED') ? 'bg-[rgba(26,174,57,0.1)] text-accent-green' : 'bg-surface-container text-ink-muted'}`}>
                 <span className="material-symbols-outlined text-[14px]">check_circle</span> {experiment?.status || 'Unknown'}
               </span>
+              {championModel && (
+                <span className="px-3 py-1 rounded-sm font-label-caps text-label-caps bg-accent-green/10 text-accent-green border border-accent-green/20 flex items-center gap-1 font-semibold">
+                  <span className="material-symbols-outlined text-[14px]">trophy</span> Champion: {championModel.model_name}
+                </span>
+              )}
             </div>
           </div>
           <div className="flex gap-4 font-body-sm text-body-sm text-ink-muted bg-surface px-4 py-3 rounded-lg border border-border-hairline">
@@ -48,7 +67,10 @@ export function ExperimentResults() {
         {/* Model Comparison Table (Full Width) */}
         <div className="col-span-12 bg-surface rounded-lg border border-border-hairline p-lg">
           <div className="flex justify-between items-center mb-md">
-            <h2 className="font-feature-title text-feature-title text-on-surface">Model Comparison</h2>
+            <div>
+              <h2 className="font-feature-title text-feature-title text-on-surface">Model Comparison</h2>
+              <p className="font-body-sm text-body-sm text-ink-muted mt-0.5">Click any model row to view its individual SHAP explanations below.</p>
+            </div>
             <button className="font-label-caps text-label-caps text-primary flex items-center gap-1 hover:underline">
               Export CSV <span className="material-symbols-outlined text-[16px]">download</span>
             </button>
@@ -60,26 +82,40 @@ export function ExperimentResults() {
                   <th className="py-3 px-4 font-label-caps text-label-caps text-ink-muted">Model Architecture</th>
                   <th className="py-3 px-4 font-label-caps text-label-caps text-ink-muted text-right">Accuracy</th>
                   <th className="py-3 px-4 font-label-caps text-label-caps text-ink-muted text-right">F1 Score</th>
+                  <th className="py-3 px-4 font-label-caps text-label-caps text-ink-muted text-right">View Status</th>
                 </tr>
               </thead>
               <tbody className="font-body-sm text-body-sm">
-                {(experiment?.models && experiment.models.length > 0 ? experiment.models : [experiment]).map((m, idx) => {
+                {modelsList.map((m, idx) => {
                   if (!m) return null;
                   const isChampion = idx === 0;
+                  const isSelected = m.run_id === activeRunId;
                   return (
                     <tr 
                       key={m.run_id || idx} 
-                      className={`border-b border-border-hairline hover:bg-surface-container-low transition-colors group ${isChampion ? 'bg-[rgba(0,117,222,0.03)] border-l-2 border-l-primary' : ''}`}
+                      onClick={() => setSelectedModelRunId(m.run_id)}
+                      className={`border-b border-border-hairline cursor-pointer transition-colors group ${isSelected ? 'bg-primary/5 border-l-4 border-l-primary' : isChampion ? 'bg-surface-container-lowest/50' : 'hover:bg-surface-container-low'}`}
                     >
                       <td className="py-4 px-4 flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${isChampion ? 'bg-primary' : 'bg-ink-muted'}`}></div>
-                        <span className={`font-semibold ${isChampion ? 'text-on-surface' : 'text-ink-muted'}`}>{m.model_name || 'Loading...'}</span>
+                        <div className={`w-2 h-2 rounded-full ${isSelected ? 'bg-primary ring-2 ring-primary/30' : isChampion ? 'bg-accent-green' : 'bg-ink-muted'}`}></div>
+                        <span className={`font-semibold capitalize ${isSelected ? 'text-primary font-bold' : isChampion ? 'text-on-surface' : 'text-ink-muted'}`}>{m.model_name || 'Loading...'}</span>
                         {isChampion && (
-                          <span className="px-2 py-0.5 rounded-sm bg-primary-container text-on-primary-container font-label-caps text-[10px] ml-2">CHAMPION</span>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-accent-green/10 text-accent-green border border-accent-green/20 ml-2 uppercase tracking-wider">
+                            CHAMPION
+                          </span>
                         )}
                       </td>
                       <td className="py-4 px-4 text-right font-medium text-on-surface">{m.accuracy !== null && m.accuracy !== undefined ? (m.accuracy * 100).toFixed(1) + '%' : '--'}</td>
                       <td className="py-4 px-4 text-right font-semibold text-primary">{m.f1_score !== null && m.f1_score !== undefined ? m.f1_score.toFixed(3) : '--'}</td>
+                      <td className="py-4 px-4 text-right">
+                        {isSelected ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary">
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span> Viewing
+                          </span>
+                        ) : (
+                          <span className="text-xs text-ink-muted group-hover:text-primary transition-colors">Click to view</span>
+                        )}
+                      </td>
                     </tr>
                   );
                 })}
@@ -90,13 +126,21 @@ export function ExperimentResults() {
 
         {/* SHAP Plot (Left Column) */}
         <div className="col-span-12 md:col-span-7 bg-surface rounded-lg border border-border-hairline p-lg flex flex-col min-h-[400px]">
-          <h2 className="font-feature-title text-feature-title text-on-surface mb-sm">SHAP Summary Plot</h2>
-          <p className="font-body-sm text-body-sm text-ink-muted mb-lg">Feature importance based on champion model evaluation.</p>
+          <div className="flex justify-between items-center mb-sm">
+            <h2 className="font-feature-title text-feature-title text-on-surface">SHAP Summary Plot</h2>
+            <span className="px-2.5 py-1 rounded bg-primary/10 text-primary font-label-caps text-xs capitalize font-semibold">
+              {activeModel?.model_name || 'Model'}
+            </span>
+          </div>
+          <p className="font-body-sm text-body-sm text-ink-muted mb-lg">
+            Feature importance based on <strong className="text-on-surface capitalize">{activeModel?.model_name || 'selected model'}</strong> evaluation.
+          </p>
           <div className="flex-grow relative flex items-center justify-center bg-surface-container-lowest rounded-lg border border-border-hairline p-4">
-            {runId ? (
+            {activeRunId ? (
               <img 
-                src={`http://localhost:8000/api/experiments/${experiment?.run_id || runId}/artifacts/shap_summary.png`} 
-                alt="SHAP Plot" 
+                key={activeRunId}
+                src={`http://localhost:8000/api/experiments/${activeRunId}/artifacts/shap_summary.png`} 
+                alt={`SHAP Plot for ${activeModel?.model_name || 'Model'}`} 
                 className="max-w-full max-h-[320px] object-contain rounded" 
                 onError={(e) => {
                   (e.target as HTMLElement).style.display = 'none';
@@ -123,10 +167,10 @@ export function ExperimentResults() {
               <span className="px-2 py-1 bg-surface-container-low rounded text-ink-muted font-label-caps text-[10px]">SHAP VALUES</span>
             </div>
             <div className="flex flex-col gap-4 mt-4">
-              {experiment?.top_features && experiment.top_features.length > 0 ? (
+              {activeTopFeatures && activeTopFeatures.length > 0 ? (
                 (() => {
-                  const maxImp = Math.max(...experiment.top_features.map(f => f.importance), 0.001);
-                  return experiment.top_features.map((feat, idx) => {
+                  const maxImp = Math.max(...activeTopFeatures.map(f => f.importance), 0.001);
+                  return activeTopFeatures.map((feat, idx) => {
                     const widthPct = Math.max(10, Math.min(100, (feat.importance / maxImp) * 100));
                     return (
                       <div key={idx} className="flex flex-col gap-1">

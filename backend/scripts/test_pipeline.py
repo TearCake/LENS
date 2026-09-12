@@ -28,6 +28,7 @@ def main():
     
     print("Starting training pipeline...")
     result = run_training_experiment(
+        experiment_run_id=str(uuid.uuid4()),
         dataset_id=dataset_id,
         target_column="target",
         models_to_train=["logistic_regression", "random_forest", "xgboost"]

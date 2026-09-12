@@ -29,12 +29,21 @@ from app.core.config import settings
 @router.get("/{run_id}/artifacts/{artifact_name}")
 def get_experiment_artifact(run_id: str, artifact_name: str):
     try:
+        model_id = None
+        try:
+            r = mlflow_manager.get_run(run_id)
+            if r and hasattr(r, "data") and r.data.tags:
+                model_id = r.data.tags.get("model_id")
+        except Exception:
+            pass
+
         details = get_experiment_details(run_id)
-        if not details:
+        if not model_id and details:
+            model_id = details.get("model_id", "")
+            
+        if not details and not model_id:
             raise HTTPException(status_code=404, detail="Run not found")
             
-        model_id = details.get("model_id", "")
-        
         # 1. Check SHAP_DIR directly
         if model_id:
             direct_shap_file = os.path.join(settings.SHAP_DIR, model_id, artifact_name)
